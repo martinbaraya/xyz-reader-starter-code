@@ -196,13 +196,14 @@ public class ArticleListActivity extends AppCompatActivity implements
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
             int width = displayMetrics.widthPixels;
+            int height = displayMetrics.heightPixels;
             int column_width, column_height;
 
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                 column_width = width/getResources().getInteger(R.integer.list_column_count);
                 column_height = Math.round((float) column_width/mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
             } else {
-                column_height = getResources().getDimensionPixelSize(R.dimen.list_photo_height);
+                column_height = (height - getResources().getDimensionPixelSize(R.dimen.action_bar_height))/2;
                 column_width = Math.round((float) column_height * mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
             }
 
@@ -210,8 +211,8 @@ public class ArticleListActivity extends AppCompatActivity implements
 
             Picasso.get()
                     .load(imageUrl)
-                    .centerCrop()
                     .resize(column_width, column_height)
+                    .centerCrop()
                     .into(holder.thumbnailView);
 
 
