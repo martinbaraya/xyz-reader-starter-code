@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.ShareCompat;
@@ -50,8 +51,8 @@ public class ArticleDetailFragment extends Fragment implements
     private View mRootView;
     private Toolbar mToolbar;
     private int mMutedColor = 0xFF333333;
-
     private ColorDrawable mStatusBarColorDrawable;
+    private FloatingActionButton mFab;
 
     private int mTopInset;
     private View mPhotoContainerView;
@@ -135,22 +136,14 @@ public class ArticleDetailFragment extends Fragment implements
 
 
         mPhotoView = mRootView.findViewById(R.id.photo);
-
+        mFab = mRootView.findViewById(R.id.share_fab);
         mStatusBarColorDrawable = new ColorDrawable(0);
 
-        mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(getActivity())
-                        .setType("text/plain")
-                        .setText("Some sample text")
-                        .getIntent(), getString(R.string.action_share)));
-            }
-        });
+        mRootView.findViewById(R.id.share_fab);
 
         mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
-        updateStatusBar();
+
         return mRootView;
     }
 
@@ -193,14 +186,22 @@ public class ArticleDetailFragment extends Fragment implements
 
         bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
+
+        String title = "";
+        String author="";
+
+
         if (mCursor != null) {
 
             mRootView.setVisibility(View.VISIBLE);
 
-            titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
-            mToolbar.setTitle(mCursor.getString(ArticleLoader.Query.TITLE));
+            title = mCursor.getString(ArticleLoader.Query.TITLE);
+            titleView.setText(title);
+            mToolbar.setTitle(title);
 
-            //TODO set a subtitle here
+            author = mCursor.getString(ArticleLoader.Query.AUTHOR);
+
+
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
                 bylineView.setText(Html.fromHtml(
@@ -209,7 +210,7 @@ public class ArticleDetailFragment extends Fragment implements
                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_ALL).toString()
                                 + " by <font color='#ffffff'>"
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                                + author
                                 + "</font>"));
 
             } else {
@@ -220,6 +221,19 @@ public class ArticleDetailFragment extends Fragment implements
                                 + "</font>"));
 
             }
+
+            /* Create an excerpt, not too big, to share in email */
+            String body = mCursor.getString(ArticleLoader.Query.BODY);
+            String email_excerpt;
+            if (body.length() < 1000) {
+                email_excerpt = body.substring(0, body.length());
+            } else {
+                email_excerpt = body.substring(0,1000).trim()+ "... " +
+                        "\nRead more at https://www.gutenberg.org/ebooks/search/?query=" +
+                        (title + "+" + author).replaceAll(" ","+");
+            }
+
+            makeFabAction(email_excerpt, title, author);
             bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
@@ -232,7 +246,7 @@ public class ArticleDetailFragment extends Fragment implements
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
                                 mRootView.findViewById(R.id.meta_bar)
                                         .setBackgroundColor(mMutedColor);
-                                updateStatusBar();
+
                             }
                         }
 
@@ -257,7 +271,7 @@ public class ArticleDetailFragment extends Fragment implements
     }
 
     @Override
-    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
+    public void onLoadFinished(@NonNull Loader<Cursor> cursorLoader, Cursor cursor) {
         if (!isAdded()) {
             if (cursor != null) {
                 cursor.close();
@@ -276,10 +290,23 @@ public class ArticleDetailFragment extends Fragment implements
     }
 
     @Override
-    public void onLoaderReset(Loader<Cursor> cursorLoader) {
+    public void onLoaderReset(@NonNull Loader<Cursor> cursorLoader) {
         mCursor = null;
         bindViews();
     }
+    public void makeFabAction(final String email, final String title, final String author) {
+        final String emailTitle = title + " by " + author;
 
+        mFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(getActivity())
+                        .setType("text/plain")
+                        .setSubject(emailTitle)
+                        .setText(email)
+                        .getIntent(), getString(R.string.action_share)));
+            }
+        });
+    }
 
 }
