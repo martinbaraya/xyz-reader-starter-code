@@ -16,7 +16,7 @@
         <ImageButton
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             android:id="@+id/action_up"
-            android:layout_height="@dimen/action_bar_height"
+            android:layout_height="match_parent"
             android:layout_gravity="center_vertical"
             android:layout_width="@dimen/back_arrow_width"
             android:background="?selectableItemBackgroundBorderless"
